@@ -23,7 +23,7 @@ import org.apache.hadoop.util.GenericOptionsParser;
 public class WikiWordCount {
 
     public static String slice(String doc, String begin, String end) {
-        int b = doc.indexOf(begin), e = doc.indexOf(end);
+        int b = doc.indexOf(begin), e = doc.lastIndexOf(end);
         if (b < 0 || e < 0)
             return "";
         while (doc.charAt(b) != '>') b++;
@@ -49,8 +49,12 @@ public class WikiWordCount {
                     chs[i] = ' ';
             }
             StringTokenizer itr = new StringTokenizer(String.valueOf(chs));
+            String w;
             while (itr.hasMoreTokens()) {
-                word.set(itr.nextToken());
+                w = itr.nextToken();
+                if (w.length() > 30)
+                    continue;
+                word.set(w);
                 context.write(word, one);
             }
         }
@@ -67,8 +71,10 @@ public class WikiWordCount {
             for (IntWritable val : values) {
                 sum += val.get();
             }
-            result.set(sum);
-            context.write(key, result);
+            if (sum >= 4) {
+                result.set(sum);
+                context.write(key, result);
+            }
         }
     }
 
