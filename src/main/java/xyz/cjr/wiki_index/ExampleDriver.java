@@ -24,6 +24,9 @@ public class ExampleDriver {
 
       pgd.addClass("BadDocCount", BadDocCount.class,
                 "A map/reduce program that count the document which do not contains <title></title>");
+
+      pgd.addClass("InvertedIndex", InvertedIndex.class,
+              "A map/reduce program that calculate the inverted index");
       exitCode = pgd.run(argv);
     }
     catch(Throwable e){

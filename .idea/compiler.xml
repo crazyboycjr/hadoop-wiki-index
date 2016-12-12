@@ -23,11 +23,13 @@
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
         <module name="HadoopWikiIndex" />
+        <module name="wiki_index" />
         <module name="wikiWordCount" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="HadoopWikiIndex" target="1.5" />
+      <module name="wiki_index" target="1.5" />
       <module name="wikiWordCount" target="1.5" />
     </bytecodeTargetLevel>
   </component>

@@ -1,15 +1,12 @@
 package xyz.cjr.wiki_index;
 
 /**
- * Created by cjr on 12/11/16.
+ * Created by cjr on 12/12/16.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.StringTokenizer;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -26,10 +23,18 @@ import org.apache.hadoop.util.GenericOptionsParser;
 import org.wikiclean.WikiClean;
 import org.wikiclean.WikiCleanBuilder;
 
-public class WikiWordCount {
+public class InvertedIndex {
 
     public static String slice(String doc, String begin, String end) {
         int b = doc.indexOf(begin), e = doc.lastIndexOf(end);
+        if (b < 0 || e < 0)
+            return "";
+        while (doc.charAt(b) != '>') b++;
+        return doc.substring(b + 1, e);
+    }
+
+    public static String slice2(String doc, String begin, String end) {
+        int b = doc.indexOf(begin), e = doc.indexOf(end);
         if (b < 0 || e < 0)
             return "";
         while (doc.charAt(b) != '>') b++;
@@ -53,24 +58,23 @@ public class WikiWordCount {
                 return;
             WikiClean cleaner = new WikiCleanBuilder().withTitle(true).build();
             String content = cleaner.clean(doc);
-            /*
-            System.out.println(doc);
-            String content = cleaner.clean(doc);
-            System.out.println(content);
-            context.write(new Text("Answer"), one);*/
             char[] chs = content.toLowerCase().toCharArray();
             for (int i = 0; i < chs.length; i++) {
                 int c = chs[i];
                 if (!(('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')))
                     chs[i] = ' ';
             }
+
+            String id = slice2(doc, "<id>", "</id>");
+            if (id.length() < 1)
+                return;
+            id = " ".concat(id);
+
             StringTokenizer itr = new StringTokenizer(String.valueOf(chs));
             String w;
             while (itr.hasMoreTokens()) {
                 w = itr.nextToken();
-                if (w.charAt(0) == '-')
-                    continue;
-                word.set(w);
+                word.set(w.concat(id));
                 context.write(word, one);
             }
 
@@ -88,36 +92,24 @@ public class WikiWordCount {
             for (IntWritable val : values) {
                 sum += val.get();
             }
-            if (sum > 1) {
-                result.set(sum);
-                context.write(key, result);
-            }
+            result.set(sum);
+            context.write(key, result);
         }
     }
 
     public static void main(String[] args) throws Exception {
-
-        /*FileInputStream fisTargetFile = new FileInputStream(new File("/tmp/wrongpage.txt"));
-
-        String doc = IOUtils.toString(fisTargetFile, "UTF-8");
-        WikiClean cleaner = new WikiCleanBuilder().withTitle(true).build();
-        String content = cleaner.clean(doc);
-
-        System.exit(1);*/
-
-
         Configuration conf = new Configuration();
         conf.set("xmlinput.start", "<page>");
         conf.set("xmlinput.end", "</page>");
 
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
         if (otherArgs.length < 2) {
-            System.err.println("Usage: WikiWordCount <in> [<in>...] <out>");
+            System.err.println("Usage: InvertedIndex <in> [<in>...] <out>");
             System.exit(2);
         }
 
-        Job job = Job.getInstance(conf, "WikiWordCount");
-        job.setJarByClass(WikiWordCount.class);
+        Job job = Job.getInstance(conf, "InvertedIndex");
+        job.setJarByClass(InvertedIndex.class);
 
         job.setInputFormatClass(XmlInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
