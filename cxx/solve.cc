@@ -123,6 +123,7 @@ private:
 		assert(strlen(needle) >= 2);
 		vector<long> &v = title_index_double_[char_num(needle[0])][char_num(needle[1])];
 		for (vector<long>::iterator it = v.begin() + lastidx; it != v.end(); ++it) {
+			lastidx++;
 			if (strcmp(haystack + *it, needle))
 				return *it;
 		}
