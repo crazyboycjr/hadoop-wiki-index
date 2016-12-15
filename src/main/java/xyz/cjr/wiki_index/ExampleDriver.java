@@ -27,6 +27,13 @@ public class ExampleDriver {
 
       pgd.addClass("InvertedIndex", InvertedIndex.class,
               "A map/reduce program that calculate the inverted index");
+
+      pgd.addClass("IDOffsetTitle", IDOffsetTitle.class,
+              "A map/reduce program that extract the <ID> <Offset> <title> tripe");
+
+      pgd.addClass("RedirectCount", RedirectCount.class,
+              "A map/reduce program that count the number of redirect page");
+
       exitCode = pgd.run(argv);
     }
     catch(Throwable e){
