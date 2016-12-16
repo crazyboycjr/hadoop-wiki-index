@@ -11,8 +11,8 @@
 
 #include "network.h"
 
-const string kEnwikiFile = "enwiki-20151102-pages-articles-multistream.xml";
-const string kIDOffsetTitleFile = "id-offset-title.txt";
+const string kEnwikiFile = "../enwiki-20151102-pages-articles-multistream.xml";
+const string kIDOffsetTitleFile = "../id-offset-title.txt";
 
 using namespace std;
 typedef long long ll;
@@ -43,24 +43,56 @@ public:
 		while (fgets(g_input_buf, kBufSize, fp)) {
 			sscanf(g_input_buf, "%lld%ld%[^\n]", &id, &offset, title_buf);
 
+			//printf("%lld %ld %s\n", id, offset, title_buf);
 			pos_in_str = title_concat_.length();
 			id_offset_[id] = offset;
 			ids_.push_back(id);
 			pos_.push_back(pos_in_str);
 
 			len = strlen(title_buf);
+			/* hadoop reduce will write a '\t' at the end of each kvpair */
+			if (title_buf[len - 1] == '\t')
+				title_buf[--len] = '\0';
 
 			for (int i = 0; i < len; i++)
 				title_buf[i] = tolower(title_buf[i]);
 			title_concat_ += title_buf;
 
-			if (len == 1 && isalpha(title_buf[0]))
-				title_index_single_[char_num(title_buf[0])] = pos_in_str;
+			/*
+			 * Warning!
+			 * because every title starts with ' ' a space
+			 */
+			if (len == 2 && isalpha(title_buf[1]))
+				title_index_single_[char_num(title_buf[1])] = pos_in_str;
 			else
-				title_index_double_[char_num(title_buf[0])][char_num(title_buf[1])].push_back(pos_in_str);
+				title_index_double_[char_num(title_buf[1])][char_num(title_buf[2])].push_back(pos_in_str);
 		}
 		printf("IDOffsetTitle init finish.\n");
 		fclose(fp);
+	}
+
+	/*
+	 * 接受enwiki.xml中的偏移量
+	 * 返回文章内容
+	 */
+	string Offset2Page(long offset)
+	{
+		printf("In function Offset2Page: handle offset = %ld\n", offset);
+		string page;
+		/* TODO change fp to private member variable */
+		FILE *fp = fopen(kEnwikiFile.c_str(), "r");
+		fseek(fp, offset, SEEK_SET);
+		char ch, a[7] = {0};
+		while ((ch = getc(fp))) {
+			page.push_back(ch);
+			for (int i = 0; i < 6; i++)
+				a[i] = a[i + 1];
+			a[6] = ch;
+			if (strcmp(a, "</page>") == 0)
+				break;
+		}
+		fclose(fp);
+		return page;
 	}
 
 	/*
@@ -70,20 +102,8 @@ public:
 	 */
 	string ID2Page(ll id)
 	{
-		string page;
-		FILE *fp = fopen(kEnwikiFile.c_str(), "r");
-		fseek(fp, id_offset_[id], SEEK_SET);
-		char ch, a[7] = {0};
-		while ((ch = getchar())) {
-			page.push_back(ch);
-			for (int i = 0; i < 6; i++)
-				a[i] = a[i + 1];
-			a[7] = ch;
-			if (strcmp(a, "</page>") == 0)
-				break;
-		}
-		fclose(fp);
-		return page;
+		printf("In function ID2Page: handle id = %lld\n", id);
+		return Offset2Page(id_offset_[id]);
 	}
 	
 	vector<string> IDs2Pages(const vector<ll> ids)
@@ -106,7 +126,10 @@ public:
 		vector<ll> ids;
 		assert(word.length() > 0);
 		if (word.length() == 1) {
-			ids.push_back(title_index_single_[word[0] - 'a']);
+			pos = title_index_single_[word[0] - 'a'];
+			printf("%ld\n", pos);
+			long idx = lower_bound(pos_.begin(), pos_.end(), pos) - pos_.begin();
+			ids.push_back(ids_[idx]);
 			return ids;
 		}
 		long tmp = 0;
@@ -120,11 +143,14 @@ public:
 private:
 	/* 不接受长度 < 2的字符串 */
 	ll FindSubStringOrDie(const char *haystack, const char *needle, long &lastidx) {
-		assert(strlen(needle) >= 2);
+		int len = strlen(needle);
+		assert(len >= 2);
+		printf("In FindSubStringOrDir needle = %s\n", needle);
 		vector<long> &v = title_index_double_[char_num(needle[0])][char_num(needle[1])];
 		for (vector<long>::iterator it = v.begin() + lastidx; it != v.end(); ++it) {
 			lastidx++;
-			if (strcmp(haystack + *it, needle))
+			//printf("In FindSubStringOrDir it = %ld, string = %s\n", *it, string(haystack + *it + 1, strlen(needle)).c_str());
+			if (strncmp(haystack + *it + 1, needle, len) == 0)
 				return *it;
 		}
 		return 0; // or nullptr?
@@ -145,22 +171,39 @@ private:
 	long title_index_single_[26];
 };
 
+string Trim(string str) {
+	int start = 0, len = str.length();
+	for (string::const_iterator it = str.begin(); it != str.end() && isspace(*it); ++it, ++start);
+	for (string::const_reverse_iterator it = str.rbegin(); it != str.rend() && isspace(*it); ++it, --len);
+	return str.substr(start, len - start);
+}
 
 string WaitInput(TCPServer &server)
 {
 	server.accept();
 	string msg = server.recv();
-	return msg;
+	return Trim(msg);
 }
 
 int main() {
-	IDOffsetTitle AA = IDOffsetTitle(kIDOffsetTitleFile);
+	IDOffsetTitle query_class = IDOffsetTitle(kIDOffsetTitleFile);
 	TCPServer server("0.0.0.0", "23334");
 	while (1) {
 		string input = WaitInput(server);
 		cout << "recv:" << input << endl;
 		// do sth
-		printf("%lld\n", AA.Word2ID(input)[0]);
+		vector<ll> ids = query_class.Word2ID(input);
+		if (ids.size() == 0) {
+			puts("No page found.");
+			server.send("No page found.");
+		} else {
+			puts("Found some pages:");
+			for_iter(id, ids)
+				printf("%lld\n", *id);
+			for_iter(id, ids) {
+				server.send(query_class.ID2Page(*id) + "\r\n\r\n");
+			}
+		}
 	}
 	return 0;
 }

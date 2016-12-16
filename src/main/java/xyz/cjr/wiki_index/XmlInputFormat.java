@@ -127,10 +127,10 @@ public class XmlInputFormat extends TextInputFormat {
                      */
                     if(readUntilMatch(endTag, true)) {
                         /**
-                         * 找到标签后把结束标签的指针位置的偏移量赋值给key
+                         * 找到标签后把start标签的指针位置的偏移量赋值给key
                          * 把buffer中记录的整个xml完整片断赋值给value
                          */
-                        key.set(fsin.getPos());
+                        key.set(fsin.getPos() - buffer.getLength());
                         value.set(buffer.getData(), 0, buffer.getLength());
                         return true;
                     }
