@@ -7,10 +7,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5e5376f7-60d3-4a0e-a8cd-3264387500b8" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/main/java/xyz/cjr/wiki_index/IDOffsetTitle.java" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/main/java/xyz/cjr/wiki_index/RedirectCount.java" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/cxx/solve" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/xyz/cjr/wiki_index/ExampleDriver.java" afterPath="$PROJECT_DIR$/src/main/java/xyz/cjr/wiki_index/ExampleDriver.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cxx/solve.cc" afterPath="$PROJECT_DIR$/cxx/solve.cc" />
     </list>
     <ignored path="wikiWordCount.iws" />
     <ignored path=".idea/workspace.xml" />

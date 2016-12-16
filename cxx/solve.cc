@@ -35,7 +35,7 @@ public:
 	 */
 	void Init(const string &filename)
 	{
-		FILE *fp = fopen(kIDOffsetTitleFile.c_str(), "r");
+		FILE *fp = fopen(filename.c_str(), "r");
 		ll id;
 		int len;
 		long offset, pos_in_str;
@@ -154,13 +154,13 @@ string WaitInput(TCPServer &server)
 }
 
 int main() {
-	//read_word_offset();
-	//read_title_offset();
+	IDOffsetTitle AA = IDOffsetTitle(kIDOffsetTitleFile);
 	TCPServer server("0.0.0.0", "23334");
 	while (1) {
 		string input = WaitInput(server);
 		cout << "recv:" << input << endl;
 		// do sth
+		printf("%lld\n", AA.Word2ID(input)[0]);
 	}
 	return 0;
 }
