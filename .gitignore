@@ -5,3 +5,4 @@ target/*
 !target/.gitkeep
 enwiki-20151102-pages-articles-multistream.xml
 id-offset-title.txt
+proxychains.conf
