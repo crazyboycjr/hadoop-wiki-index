@@ -1,3 +1,7 @@
+/*
+ * This Program preprocess the offset of each line in inverted-index-fmt.txt
+ * for query use.
+ */
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -10,7 +14,7 @@ char s[maxn];
 
 int main() {
 	char c;
-	int off = 0;
+	long off = 0;
 	while (1) {
 		while (off++, (c = getchar()) != '\n' && c > 0);
 		if (c < 0)
