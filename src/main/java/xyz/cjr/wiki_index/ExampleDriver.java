@@ -34,6 +34,12 @@ public class ExampleDriver {
       pgd.addClass("RedirectCount", RedirectCount.class,
               "A map/reduce program that count the number of redirect page");
 
+      pgd.addClass("PageWordCount", PageWordCount.class,
+              "A map/reduce program that count the wordcount of each page");
+
+      pgd.addClass("PageMaxWordCount", PageMaxWordCount.class,
+              "A map/reduce program that count the most frequent occurence of a word of each page");
+
       exitCode = pgd.run(argv);
     }
     catch(Throwable e){
