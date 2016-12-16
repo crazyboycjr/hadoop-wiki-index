@@ -55,8 +55,11 @@ public:
 			if (title_buf[len - 1] == '\t')
 				title_buf[--len] = '\0';
 
-			for (int i = 0; i < len; i++)
+			for (int i = 0; i < len; i++) {
 				title_buf[i] = tolower(title_buf[i]);
+				if (!isalpha(title_buf[i]))
+					title_buf[i] = ' ';
+			}
 			title_concat_ += title_buf;
 
 			/*
