@@ -1,4 +1,5 @@
 *.class
 *~
 *.o
-target/
+target/*
+!target/.gitkeep
