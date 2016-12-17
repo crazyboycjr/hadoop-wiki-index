@@ -251,7 +251,7 @@ public:
 			words.push_back(ptr);
 		//sort(words.begin(), words.end(), cmp_df);
 		/*
-		 * Because the input is type by user, so we can use choose sort here
+		 * Because the input is typed by user, so we can use selection sort here
 		 * which is O(n^2)
 		 */
 		for (int i = 0; i < (int)words.size() - 1; i++)
@@ -390,7 +390,7 @@ int main() {
 		printf("query: %s\n", input.c_str());
 		// do sth
 		vector<string> result_pages;
-		vector<ll> ids = query_class.Word2ID(input);
+		vector<ll> ids = query_class.Word2ID(input, limit);
 		unordered_map<ll, int> id_found_in_title;
 		if (ids.size() == 0) {
 			puts("Considering title. No page found.");
@@ -407,7 +407,7 @@ int main() {
 		}
 
 		puts("Begin to find in pages...");
-		vector<ll> ids2 = inverted_index_class.Query(input);
+		vector<ll> ids2 = inverted_index_class.Query(input, limit);
 
 		if (ids2.size() == 0) {
 			puts("No page found in documents");
