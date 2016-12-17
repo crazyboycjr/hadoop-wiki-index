@@ -64,7 +64,7 @@ public:
 
 			for (int i = 0; i < len; i++) {
 				title_buf[i] = tolower(title_buf[i]);
-				if (!isalpha(title_buf[i]))
+				if (!isascii(title_buf[i]))
 					title_buf[i] = ' ';
 			}
 			title_concat_ += title_buf;
@@ -73,7 +73,7 @@ public:
 			 * Warning!
 			 * because every title starts with ' ' a space
 			 */
-			if (len == 2 && isalpha(title_buf[1]))
+			if (len == 2)
 				title_index_single_[char_num(title_buf[1])] = pos_in_str;
 			else
 				title_index_double_[char_num(title_buf[1])][char_num(title_buf[2])].push_back(pos_in_str);
@@ -166,7 +166,7 @@ private:
 		return 0; // or nullptr?
 	}
 
-	int char_num(int ch) { return ch - 'a'; }
+	int char_num(int ch) { return ch; }
 
 	FILE *context_fp_;
 
@@ -179,8 +179,8 @@ private:
 	/* 第i篇文章title在字符串中的下标*/
 	vector<long> pos_;
 	/* 索引两个字母开头的所有位置 加速查找 */
-	vector<long> title_index_double_[26][26];
-	long title_index_single_[26];
+	vector<long> title_index_double_[256][256];
+	long title_index_single_[256];
 };
 
 struct IDTimesTF {
@@ -247,8 +247,12 @@ public:
 		strcpy(input_cstr, input.c_str());
 		/* Warning: strncpy will not be null-terminated if n <= the length of the string */
 		//strncpy(input_cstr, input.c_str(), input.length() + 1);
-		for (char *ptr = strtok(input_cstr, " "); ptr != NULL; ptr = strtok(NULL, " "))
+		for (char *ptr = strtok(input_cstr, " "); ptr != NULL; ptr = strtok(NULL, " ")) {
+			int len = strlen(ptr);
+			for (int i = 0; i < len; i++)
+				ptr[i] = tolower(ptr[i]);
 			words.push_back(ptr);
+		}
 		//sort(words.begin(), words.end(), cmp_df);
 		/*
 		 * Because the input is typed by user, so we can use selection sort here
@@ -260,12 +264,6 @@ public:
 					swap(words[i], words[j]);
 
 		puts("After sort by DF, the input is:");
-		for_iter(word, words) {
-			putchar('\'');
-			printf("%s", word->c_str());
-			printf("%ld", word->length());
-			putchar('\'');
-		}
 		return Words2Pages(words, K);
 	}
 
@@ -424,12 +422,14 @@ int main() {
 		if (result_pages.size() == 0) {
 			puts("Finally found nothing, try some other words.");
 			server.send("Finally found nothing, try some other words.");
+			server.end();
 		} else {
 			for_iter(page, result_pages) {
 				if (limit-- == 0)
 					break;
 				server.send((*page + "\r\n\r\n").c_str());
 			}
+			server.end();
 		}
 	}
 	return 0;
