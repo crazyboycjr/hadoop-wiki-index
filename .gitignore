@@ -11,3 +11,4 @@ inverted-index-word-offset.txt
 inverted-index-word-offset-df.txt
 page-wordcount.txt
 page-max-wordcount.txt
+.idea/workspace.xml

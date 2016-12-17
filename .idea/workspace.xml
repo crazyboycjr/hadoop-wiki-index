@@ -6,9 +6,7 @@
     </artifacts-to-build>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5e5376f7-60d3-4a0e-a8cd-3264387500b8" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cxx/solve.cc" afterPath="$PROJECT_DIR$/cxx/solve.cc" />
-    </list>
+    <list default="true" id="5e5376f7-60d3-4a0e-a8cd-3264387500b8" name="Default" comment="" />
     <ignored path="wikiWordCount.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="$PROJECT_DIR$/out/" />
@@ -623,7 +621,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="351" y="1262" width="1400" height="1000" extended-state="0" />
+    <frame x="351" y="1262" width="1400" height="1000" extended-state="1" />
     <editor active="true" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
