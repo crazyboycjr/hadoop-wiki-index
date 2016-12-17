@@ -235,12 +235,8 @@ public:
 		printf("InvertedIndex init finished.\n");
 	}
 
-	/*
-	 * 接受一个字符串输入，该函数将字符串分成单词
-	 * 根据DF排序，然后再根据TF查询相关度最高的K个解
-	 * 返回结果文章的id
-	 */
-	vector<ll> Query(string input, int K = 10)
+
+	vector<string> SplitAndSortByDF(string input)
 	{
 		vector<string> words;
 		char *input_cstr = new char[input.length() + 1];
@@ -262,8 +258,20 @@ public:
 			for (int j = i + 1; j < (int)words.size(); j++)
 				if (!cmp_df(words[i], words[j]))
 					swap(words[i], words[j]);
+		return words;
+	}
 
+	/*
+	 * 接受一个字符串输入，该函数将字符串分成单词
+	 * 根据DF排序，然后再根据TF查询相关度最高的K个解
+	 * 返回结果文章的id
+	 */
+	vector<ll> Query(string input, int K = 10)
+	{
+		vector<string> words = SplitAndSortByDF(input);
 		puts("After sort by DF, the input is:");
+		for_iter(word, words)
+			printf("%s\n", word->c_str());
 		return Words2Pages(words, K);
 	}
 
@@ -296,7 +304,8 @@ public:
 			for (long j = 0; j < df; j++) {
 				id = next_ll(fps[i]);
 				tf = next_ll(fps[i]);
-				id_times[id]++;
+				if (id_times[id]++ == 0)
+					id_tfproduct[id] = 1.0;
 				id_tfproduct[id] *= 1.0 * tf / page_words_[id];
 			}
 		}
@@ -306,8 +315,10 @@ public:
 		}
 		sort(vec.begin(), vec.end());
 		vector<ll> ids;
-		for (size_t i = 0; i < (size_t)K && i < vec.size(); i++)
+		for (size_t i = 0; i < (size_t)K && i < vec.size(); i++) {
 			ids.push_back(vec[i].id);
+			printf("id=%lld times=%d tfproduct=%f\n", vec[i].id, vec[i].times, vec[i].tfproduct);
+		}
 		for_iter(fp, fps)
 			fclose(*fp);
 		return ids;
@@ -380,28 +391,27 @@ int main() {
 	while (1) {
 		string input = WaitInput(server);
 		cout << "recv:" << input << endl;
+
+		/* extract limit */
 		size_t pos = input.find_first_of(" ");
 		assert(pos != string::npos);
 		int limit = strtol(input.substr(0, pos).c_str(), NULL, 10);
 		input = input.substr(pos + 1, input.length() - pos - 1);
 		printf("limit: %d\n", limit);
 		printf("query: %s\n", input.c_str());
+		
 		// do sth
+		vector<ll> result_ids;
 		vector<string> result_pages;
 		vector<ll> ids = query_class.Word2ID(input, limit);
-		unordered_map<ll, int> id_found_in_title;
+		unordered_map<ll, int> id_found_in_stage2;
+
 		if (ids.size() == 0) {
 			puts("Considering title. No page found.");
 		} else {
 			puts("Considering title. Found some pages:");
-			for_iter(id, ids) {
+			for_iter(id, ids)
 				printf("%lld\n", *id);
-				id_found_in_title[*id] = 1;
-			}
-			for_iter(id, ids) {
-				result_pages.push_back(query_class.ID2Page(*id));
-				//server.send(query_class.ID2Page(*id) + "\r\n\r\n");
-			}
 		}
 
 		puts("Begin to find in pages...");
@@ -410,14 +420,21 @@ int main() {
 		if (ids2.size() == 0) {
 			puts("No page found in documents");
 		} else {
-			for_iter(id, ids2)
-				printf("%lld\n", *id);
 			for_iter(id, ids2) {
-				if (!id_found_in_title[*id]) {
-					result_pages.push_back(query_class.ID2Page(*id));
+				printf("%lld\n", *id);
+				result_ids.push_back(*id);
+				id_found_in_stage2[*id] = 1;
+			}
+			for_iter(id, ids) {
+				if (!id_found_in_stage2[*id]) {
+					result_ids.push_back(*id);
+					//result_pages.push_back(query_class.ID2Page(*id));
 				}
 			}
 		}
+
+		for_iter(id, result_ids)
+			result_pages.push_back(query_class.ID2Page(*id));
 
 		if (result_pages.size() == 0) {
 			puts("Finally found nothing, try some other words.");
