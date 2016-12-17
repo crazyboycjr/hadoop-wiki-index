@@ -6,3 +6,8 @@ target/*
 enwiki-20151102-pages-articles-multistream.xml
 id-offset-title.txt
 proxychains.conf
+inverted-index-fmt.txt
+inverted-index-word-offset.txt
+inverted-index-word-offset-df.txt
+page-wordcount.txt
+page-max-wordcount.txt
