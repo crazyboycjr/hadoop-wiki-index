@@ -1,6 +1,6 @@
 
 .PHONY: clean run
-CXXFLAGS = -g -Wall -O2 -Og -std=c++0x
+CXXFLAGS = -g -Wall -O2 -std=c++0x
 TARGET_DIR = ../target
 OBJS = network.o solve.o
 solve_BIN = $(TARGET_DIR)/solve

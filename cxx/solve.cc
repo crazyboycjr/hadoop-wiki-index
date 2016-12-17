@@ -183,6 +183,21 @@ private:
 	long title_index_single_[26];
 };
 
+struct IDTimesTF {
+	IDTimesTF() {id = 0; tfproduct = 0; times = 0;}
+	IDTimesTF(ll _id, double _tfproduct, int _times) {
+		id = _id;
+		tfproduct = _tfproduct;
+		times = _times;
+	}
+	ll id;
+	double tfproduct;
+	int times;
+	bool operator < (const IDTimesTF &a) const {
+		return times > a.times || (times == a.times && tfproduct > a.tfproduct);
+	}
+};
+
 class InvertedIndex {
 public:
 	/* 
@@ -274,19 +289,7 @@ public:
 		}
 		unordered_map<ll, int> id_times;
 		unordered_map<ll, double> id_tfproduct;
-		struct IDTimesTF {
-			ll id;
-			double tfproduct;
-			int times;
-			bool operator < (const IDTimesTF &a) const {
-				return times > a.times || (times == a.times && tfproduct > a.tfproduct);
-			}
-		};
-		printf("%ld\n", df_["linux"]);
-		printf("%s\n", words[0].c_str());
-		printf("%ld\n", words[0].length());
-		printf("%ld\n", df_[words[0]]);
-		printf("%ld\n", df_[words[0].c_str()]);
+
 		ll id, tf;
 		vector<IDTimesTF> vec;
 		for (size_t i = 0; i < words.size(); ++i) {
@@ -300,11 +303,8 @@ public:
 			}
 		}
 		for_iter(it, id_times) {
-			vec.push_back((IDTimesTF) {
-							it->first,
-							id_tfproduct[it->first],
-							it->second
-						});
+			vec.push_back((IDTimesTF){it->first, id_tfproduct[it->first], it->second});
+			//vec.push_back(IDTimesTF(it->first, id_tfproduct[it->first], it->second));
 		}
 		sort(vec.begin(), vec.end());
 		vector<ll> ids;
