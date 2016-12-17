@@ -79,6 +79,8 @@ module.exports.search = function *search() {
     host: '127.0.0.1',
     port: 23334
   });
+  if (!this.query.strategy)
+    this.query.limit = '-' + this.query.limit;
   let request = `${this.query.limit} ${this.query.words}`;
   client.write(request);
   let res = yield receive(client);
