@@ -9,11 +9,17 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <queue>
+#include <utility>
 
 #include "network.h"
 
 const string kEnwikiFile = "../enwiki-20151102-pages-articles-multistream.xml";
 const string kIDOffsetTitleFile = "../id-offset-title.txt";
+const string kInvertedIndexFile = "../inverted-index-fmt.txt";
+const string kInvertedIndexWordOffsetFile = "../inverted-index-word-offset-df.txt";
+const string kPageWordCountFile = "../page-wordcount.txt";
+const string kPageMaxWordCountFile = "../page-max-wordcount.txt";
 
 using namespace std;
 typedef long long ll;
@@ -25,18 +31,19 @@ char g_input_buf[kBufSize];
 
 class IDOffsetTitle {
 public:
-	IDOffsetTitle(const string &filename)
+	IDOffsetTitle(const string &offset_file, const string &context_file)
 	{
-		Init(filename);
+		Init(offset_file, context_file);
 	}
 
 	/*
-	 * 从filename中读取<id> <offset> <title>内容
+	 * 从offset_file中读取<id> <offset> <title>内容
 	 * 建立合适的数据结构，以支持下面的查找操作
 	 */
-	void Init(const string &filename)
+	void Init(const string &offset_file, const string &context_file)
 	{
-		FILE *fp = fopen(filename.c_str(), "r");
+		context_fp_ = fopen(context_file.c_str(), "r");
+		FILE *fp = fopen(offset_file.c_str(), "r");
 		ll id;
 		int len;
 		long offset, pos_in_str;
@@ -71,7 +78,7 @@ public:
 			else
 				title_index_double_[char_num(title_buf[1])][char_num(title_buf[2])].push_back(pos_in_str);
 		}
-		printf("IDOffsetTitle init finish.\n");
+		printf("IDOffsetTitle init finished.\n");
 		fclose(fp);
 	}
 
@@ -84,7 +91,7 @@ public:
 		printf("In function Offset2Page: handle offset = %ld\n", offset);
 		string page;
 		/* TODO change fp to private member variable */
-		FILE *fp = fopen(kEnwikiFile.c_str(), "r");
+		FILE *fp = context_fp_;
 		fseek(fp, offset, SEEK_SET);
 		char ch, a[7] = {0};
 		while ((ch = getc(fp))) {
@@ -95,7 +102,6 @@ public:
 			if (strcmp(a, "</page>") == 0)
 				break;
 		}
-		fclose(fp);
 		return page;
 	}
 
@@ -162,6 +168,8 @@ private:
 
 	int char_num(int ch) { return ch - 'a'; }
 
+	FILE *context_fp_;
+
 	/* ID到偏移量的hash */
 	unordered_map<ll, long> id_offset_;
 	/* 所有title字符串的拼接 */
@@ -173,6 +181,184 @@ private:
 	/* 索引两个字母开头的所有位置 加速查找 */
 	vector<long> title_index_double_[26][26];
 	long title_index_single_[26];
+};
+
+class InvertedIndex {
+public:
+	/* 
+	 * 接受两个参数，前一个文件是后一个文件的偏移量索引
+	 */
+	InvertedIndex(const string &offset_file, const string &context_file)
+	{
+		Init(offset_file, context_file);
+	}
+
+	void Init(const string &offset_file, const string &context_file)
+	{
+		context_file_ = context_file;
+		FILE *fp = fopen(offset_file.c_str(), "r");
+		long offset, df;
+		char word_buf[kBufSize];
+		while (fgets(g_input_buf, kBufSize, fp)) {
+			sscanf(g_input_buf, "%s%ld%ld", word_buf, &offset, &df);
+			//printf("%s %ld %ld\n", word_buf, offset, df);
+			word_offset_[word_buf] = offset;
+			df_[word_buf] = df;
+		}
+		fclose(fp);
+
+		ll id;
+		int count;
+		fp = fopen(kPageWordCountFile.c_str(), "r");
+		while (~fscanf(fp, "%lld%d\n", &id, &count))
+			page_words_[id] = count;
+		fclose(fp);
+		fp = fopen(kPageMaxWordCountFile.c_str(), "r");
+		while (~fscanf(fp, "%lld%d\n", &id, &count))
+			page_max_words_[id] = count;
+		fclose(fp);
+		printf("InvertedIndex init finished.\n");
+	}
+
+	/*
+	 * 接受一个字符串输入，该函数将字符串分成单词
+	 * 根据DF排序，然后再根据TF查询相关度最高的K个解
+	 * 返回结果文章的id
+	 */
+	vector<ll> Query(string input, int K = 10)
+	{
+		vector<string> words;
+		char *input_cstr = new char[input.length() + 1];
+		strcpy(input_cstr, input.c_str());
+		/* Warning: strncpy will not be null-terminated if n <= the length of the string */
+		//strncpy(input_cstr, input.c_str(), input.length() + 1);
+		for (char *ptr = strtok(input_cstr, " "); ptr != NULL; ptr = strtok(NULL, " "))
+			words.push_back(ptr);
+		//sort(words.begin(), words.end(), cmp_df);
+		/*
+		 * Because the input is type by user, so we can use choose sort here
+		 * which is O(n^2)
+		 */
+		for (int i = 0; i < (int)words.size() - 1; i++)
+			for (int j = i + 1; j < (int)words.size(); j++)
+				if (!cmp_df(words[i], words[j]))
+					swap(words[i], words[j]);
+
+		puts("After sort by DF, the input is:");
+		for_iter(word, words) {
+			putchar('\'');
+			printf("%s", word->c_str());
+			printf("%ld", word->length());
+			putchar('\'');
+		}
+		return Words2Pages(words, K);
+	}
+
+	/*
+	 * 采用一次一单词
+	 * DF小的单词在前面
+	 */
+	vector<ll> Words2Pages(const vector<string> words, int K = 10)
+	{
+		if (K < 100) {
+			/* use normal array */
+		} else {
+			/* Use priority_queue */
+		}
+		/* 一次性打开多个，减少seek */
+		vector<FILE*> fps;
+		for_iter(word, words) {
+			FILE *fp =  fopen(context_file_.c_str(), "r");
+			fseek(fp, word_offset_[*word] + word->length(), SEEK_SET);
+			fps.push_back(fp);
+		}
+		unordered_map<ll, int> id_times;
+		unordered_map<ll, double> id_tfproduct;
+		struct IDTimesTF {
+			ll id;
+			double tfproduct;
+			int times;
+			bool operator < (const IDTimesTF &a) const {
+				return times > a.times || (times == a.times && tfproduct > a.tfproduct);
+			}
+		};
+		printf("%ld\n", df_["linux"]);
+		printf("%s\n", words[0].c_str());
+		printf("%ld\n", words[0].length());
+		printf("%ld\n", df_[words[0]]);
+		printf("%ld\n", df_[words[0].c_str()]);
+		ll id, tf;
+		vector<IDTimesTF> vec;
+		for (size_t i = 0; i < words.size(); ++i) {
+			long df = df_[words[i]];
+			printf("For words %s, df = %ld\n", words[i].c_str(), df);
+			for (long j = 0; j < df; j++) {
+				id = next_ll(fps[i]);
+				tf = next_ll(fps[i]);
+				id_times[id]++;
+				id_tfproduct[id] *= 1.0 * tf / page_words_[id];
+			}
+		}
+		for_iter(it, id_times) {
+			vec.push_back((IDTimesTF) {
+							it->first,
+							id_tfproduct[it->first],
+							it->second
+						});
+		}
+		sort(vec.begin(), vec.end());
+		vector<ll> ids;
+		for (size_t i = 0; i < (size_t)K && i < vec.size(); i++)
+			ids.push_back(vec[i].id);
+		for_iter(fp, fps)
+			fclose(*fp);
+		return ids;
+	}
+
+private:
+	bool cmp_df(const string &a, const string &b)
+	{
+		return df_[a] < df_[b];
+	}
+
+	/* id是按字典序排的，所以应该调这个函数 */
+	string next_id(FILE *fp)
+	{
+		char s[30];
+		fscanf(fp, "%s", s);
+		return s;
+	}
+	/* Only consider positive number */
+	ll next_ll(FILE *fp)
+	{
+		char c;
+		while (c = getc(fp), !isdigit(c));
+		ll ret = c - 48;
+		while (c = getc(fp), isdigit(c))
+			ret = ret * 10 + c - 48;
+		return ret;
+	}
+
+	string context_file_;
+	/*
+	 * key: word
+	 * value: offset
+	 */
+	unordered_map<string, long> word_offset_;
+	/* 
+	 * 文档频率 Document Frequency
+	 * key: word
+	 * value: df
+	 */
+	unordered_map<string, long> df_;
+
+	/* 
+	 * key: id
+	 * value: total words of page
+	 */
+	unordered_map<ll, int> page_words_;
+
+	unordered_map<ll, int> page_max_words_;
 };
 
 string Trim(string str) {
@@ -190,22 +376,59 @@ string WaitInput(TCPServer &server)
 }
 
 int main() {
-	IDOffsetTitle query_class = IDOffsetTitle(kIDOffsetTitleFile);
+	IDOffsetTitle query_class = IDOffsetTitle(kIDOffsetTitleFile, kEnwikiFile);
+	InvertedIndex inverted_index_class = InvertedIndex(kInvertedIndexWordOffsetFile, kInvertedIndexFile);
 	TCPServer server("0.0.0.0", "23334");
 	while (1) {
 		string input = WaitInput(server);
 		cout << "recv:" << input << endl;
+		size_t pos = input.find_first_of(" ");
+		assert(pos != string::npos);
+		int limit = strtol(input.substr(0, pos).c_str(), NULL, 10);
+		input = input.substr(pos + 1, input.length() - pos - 1);
+		printf("limit: %d\n", limit);
+		printf("query: %s\n", input.c_str());
 		// do sth
+		vector<string> result_pages;
 		vector<ll> ids = query_class.Word2ID(input);
+		unordered_map<ll, int> id_found_in_title;
 		if (ids.size() == 0) {
-			puts("No page found.");
-			server.send("No page found.");
+			puts("Considering title. No page found.");
 		} else {
-			puts("Found some pages:");
-			for_iter(id, ids)
-				printf("%lld\n", *id);
+			puts("Considering title. Found some pages:");
 			for_iter(id, ids) {
-				server.send(query_class.ID2Page(*id) + "\r\n\r\n");
+				printf("%lld\n", *id);
+				id_found_in_title[*id] = 1;
+			}
+			for_iter(id, ids) {
+				result_pages.push_back(query_class.ID2Page(*id));
+				//server.send(query_class.ID2Page(*id) + "\r\n\r\n");
+			}
+		}
+
+		puts("Begin to find in pages...");
+		vector<ll> ids2 = inverted_index_class.Query(input);
+
+		if (ids2.size() == 0) {
+			puts("No page found in documents");
+		} else {
+			for_iter(id, ids2)
+				printf("%lld\n", *id);
+			for_iter(id, ids2) {
+				if (!id_found_in_title[*id]) {
+					result_pages.push_back(query_class.ID2Page(*id));
+				}
+			}
+		}
+
+		if (result_pages.size() == 0) {
+			puts("Finally found nothing, try some other words.");
+			server.send("Finally found nothing, try some other words.");
+		} else {
+			for_iter(page, result_pages) {
+				if (limit-- == 0)
+					break;
+				server.send((*page + "\r\n\r\n").c_str());
 			}
 		}
 	}
