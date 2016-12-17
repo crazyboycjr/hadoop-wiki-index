@@ -137,3 +137,8 @@ string TCPServer::recv()
 
 	return ret;
 }
+
+void TCPServer::end()
+{
+	::close(clfd);
+}

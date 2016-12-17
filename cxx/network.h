@@ -25,6 +25,7 @@ public:
 	void send(const string &msg);
 	int accept();
 	string recv();
+	void end();
 private:
 	int initserver(int type, const struct sockaddr *addr,
 			socklen_t alen, int qlen);
