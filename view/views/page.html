@@ -1,0 +1,25 @@
+{% extends 'layout.html' %}
+
+{% block title %}Wiki-Serach-Engine{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="/styles/markdown-white.css">
+{% endblock %}
+
+{% block content %}
+<div id="container">
+  <div>
+    <h1 class="h1">{{ page.title }}</h1>
+  </div>
+  <div id="wiki-content">
+  </div>
+
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+  var wikiContent = document.getElementById("wiki-content");
+  wikiContent.innerHTML = `{{ page.text | raw }}`;
+</script>
+{% endblock %}

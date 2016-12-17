@@ -13,6 +13,7 @@ app.use(logger());
 
 app.use(route.get('/', routes.home));
 app.use(route.get('/search', routes.search));
+app.use(route.get('/id/:id', routes.page));
 
 // Serve static files
 app.use(serve(path.join(__dirname, 'public')));

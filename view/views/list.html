@@ -1,0 +1,29 @@
+{% extends 'layout.html' %}
+
+{% block title %}Wiki-Serach-Engine{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="/styles/markdown-white.css">
+{% endblock %}
+
+{% block content %}
+<div id="container">
+  <div>
+    <h1 class="h1">Search results</h1>
+  </div>
+  <div id="wiki-content">
+    <ul>
+      {% for page in pages %}
+        <li>
+          <h2><a href="/id/{{ page.id }}">{{ page.title | raw }}</a></h2>
+          <div>{{ page.text | raw }}</div>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block script %}
+{% endblock %}
