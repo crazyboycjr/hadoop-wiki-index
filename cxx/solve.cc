@@ -218,7 +218,7 @@ public:
 			sscanf(g_input_buf, "%s%ld%ld", word_buf, &offset, &df);
 			//printf("%s %ld %ld\n", word_buf, offset, df);
 			word_offset_[word_buf] = offset;
-			df_[word_buf] = df;
+			df_[word_buf] = df / 2;
 		}
 		fclose(fp);
 
@@ -266,7 +266,7 @@ public:
 	 * 根据DF排序，然后再根据TF查询相关度最高的K个解
 	 * 返回结果文章的id
 	 */
-	vector<ll> Query(string input, int K = 10)
+	vector<ll> Query(string input, int K = 10, int strategy = 1)
 	{
 		vector<string> words = SplitAndSortByDF(input);
 		puts("After sort by DF, the input is:");
@@ -279,7 +279,7 @@ public:
 	 * 采用一次一单词
 	 * DF小的单词在前面
 	 */
-	vector<ll> Words2Pages(const vector<string> words, int K = 10)
+	vector<ll> Words2Pages(const vector<string> words, int K = 10, int strategy = 1)
 	{
 		if (K < 100) {
 			/* use normal array */
@@ -295,6 +295,8 @@ public:
 		}
 		unordered_map<ll, int> id_times;
 		unordered_map<ll, double> id_tfproduct;
+		id_times.clear();
+		id_tfproduct.clear();
 
 		ll id, tf;
 		vector<IDTimesTF> vec;
@@ -306,7 +308,10 @@ public:
 				tf = next_ll(fps[i]);
 				if (id_times[id]++ == 0)
 					id_tfproduct[id] = 1.0;
-				id_tfproduct[id] *= 1.0 * tf / page_words_[id];
+				if (strategy)
+					id_tfproduct[id] *= 1.0 * tf / page_words_[id];
+				else
+					id_tfproduct[id] *= 1.0 * tf / page_max_words_[id];
 			}
 		}
 		for_iter(it, id_times) {
@@ -316,8 +321,10 @@ public:
 		sort(vec.begin(), vec.end());
 		vector<ll> ids;
 		for (size_t i = 0; i < (size_t)K && i < vec.size(); i++) {
-			ids.push_back(vec[i].id);
 			printf("id=%lld times=%d tfproduct=%f\n", vec[i].id, vec[i].times, vec[i].tfproduct);
+			if (page_words_[vec[i].id] < 100)
+				continue;
+			ids.push_back(vec[i].id);
 		}
 		for_iter(fp, fps)
 			fclose(*fp);
@@ -399,6 +406,11 @@ int main() {
 		input = input.substr(pos + 1, input.length() - pos - 1);
 		printf("limit: %d\n", limit);
 		printf("query: %s\n", input.c_str());
+		int strategy = 0;
+		if (limit < 0) {
+			limit = -limit;
+			strategy = 1;
+		}
 		
 		// do sth
 		vector<ll> result_ids;
@@ -415,7 +427,7 @@ int main() {
 		}
 
 		puts("Begin to find in pages...");
-		vector<ll> ids2 = inverted_index_class.Query(input, limit);
+		vector<ll> ids2 = inverted_index_class.Query(input, limit, strategy);
 
 		if (ids2.size() == 0) {
 			puts("No page found in documents");
