@@ -6,7 +6,11 @@
     </artifacts-to-build>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5e5376f7-60d3-4a0e-a8cd-3264387500b8" name="Default" comment="" />
+    <list default="true" id="5e5376f7-60d3-4a0e-a8cd-3264387500b8" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cxx/solve.cc" afterPath="$PROJECT_DIR$/cxx/solve.cc" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/view/controllers/routes.js" afterPath="$PROJECT_DIR$/view/controllers/routes.js" />
+    </list>
     <ignored path="wikiWordCount.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="$PROJECT_DIR$/out/" />
@@ -52,7 +56,7 @@
       <file leaf-file-name="PageWordCount.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/xyz/cjr/wiki_index/PageWordCount.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="482">
+            <state relative-caret-position="900">
               <caret line="78" column="53" selection-start-line="78" selection-start-column="53" selection-end-line="78" selection-end-column="53" />
               <folding>
                 <element signature="imports" expanded="true" />
@@ -180,7 +184,7 @@
   </component>
   <component name="ProjectFrameBounds">
     <option name="x" value="351" />
-    <option name="y" value="1262" />
+    <option name="y" value="62" />
     <option name="width" value="1400" />
     <option name="height" value="1000" />
   </component>
@@ -621,7 +625,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="351" y="1262" width="1400" height="1000" extended-state="1" />
+    <frame x="351" y="62" width="1400" height="1000" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -1056,7 +1060,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/xyz/cjr/wiki_index/PageWordCount.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="482">
+        <state relative-caret-position="900">
           <caret line="78" column="53" selection-start-line="78" selection-start-column="53" selection-end-line="78" selection-end-column="53" />
           <folding>
             <element signature="imports" expanded="true" />

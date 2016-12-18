@@ -8,6 +8,7 @@
 
 {% block content %}
 <div id="container">
+  <!--<a class="mw-wiki-logo" href="/" title="Visit the main page"><h1>Main Page</h1></a>-->
   <div>
     <h1 class="h1">Search results</h1>
   </div>
@@ -23,6 +24,17 @@
   </div>
 
 </div>
+<style>
+  .mw-wiki-logo {
+    //background-image: url(/images/enwiki.png);
+    background-color: aliceblue;
+    display: block;
+    width: 10em;
+    height: 42px;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+</style>
 {% endblock %}
 
 {% block script %}
