@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cassert>
 #include <cctype>
+#include <cmath>
 
 #include <string>
 #include <iostream>
@@ -150,6 +151,28 @@ public:
 		return ids;
 	}
 
+	/*
+	 * 接受一个文章标题，返回文章id(long long)
+	 * 因为没有做title的索引，所以这个函数还用和上一个函数同样的方法在title中查找
+	 */
+	ll Title2ID(const string &title)
+	{
+		long pos = 0;
+		vector<ll> ids;
+		assert(title.length() > 0);
+		if (title.length() == 1) {
+			pos = title_index_single_[title[0] - 'a'];
+			printf("%ld\n", pos);
+			long idx = lower_bound(pos_.begin(), pos_.end(), pos) - pos_.begin();
+			return ids_[idx];
+		}
+		if ((pos = FindTitle(title_concat_.c_str(), title.c_str()))) {
+			long idx = lower_bound(pos_.begin(), pos_.end(), pos) - pos_.begin();
+			return ids_[idx];
+		}
+		return -1;
+	}
+
 private:
 	/* 不接受长度 < 2的字符串 */
 	ll FindSubStringOrDie(const char *haystack, const char *needle, long &lastidx) {
@@ -162,6 +185,22 @@ private:
 			//printf("In FindSubStringOrDir it = %ld, string = %s\n", *it, string(haystack + *it + 1, strlen(needle)).c_str());
 			if (strncmp(haystack + *it + 1, needle, len) == 0)
 				return *it;
+		}
+		return 0; // or nullptr?
+	}
+
+	ll FindTitle(const char *haystack, const char *needle) {
+		int len = strlen(needle);
+		assert(len >= 2);
+		printf("In FindTitle needle = %s\n", needle);
+		vector<long> &v = title_index_double_[char_num(needle[0])][char_num(needle[1])];
+		for (vector<long>::iterator it = v.begin(); it != v.end(); ++it) {
+			//printf("In FindSubStringOrDir it = %ld, string = %s\n", *it, string(haystack + *it + 1, strlen(needle)).c_str());
+			if (strncmp(haystack + *it + 1, needle, len) == 0) {
+				long idx = lower_bound(pos_.begin(), pos_.end(), *it) - pos_.begin();
+				if (pos_[idx + 1] - pos_[idx] == len + 1)
+					return *it;
+			}
 		}
 		return 0; // or nullptr?
 	}
@@ -183,6 +222,8 @@ private:
 	long title_index_single_[256];
 };
 
+IDOffsetTitle *g_query_class;
+
 struct IDTimesTF {
 	IDTimesTF() {id = 0; tfproduct = 0; times = 0;}
 	IDTimesTF(ll _id, double _tfproduct, int _times) {
@@ -197,6 +238,28 @@ struct IDTimesTF {
 		return times > a.times || (times == a.times && tfproduct > a.tfproduct);
 	}
 };
+
+string ReadRedirect(const string &page)
+{
+	/* extract redirect */
+	size_t pos, pos2;
+	pos = page.find("<redirect");
+	if (pos == string::npos)
+		goto fail;
+	pos = page.find("title=\"", pos);
+	if (pos == string::npos)
+		goto fail;
+	pos2 = page.find("/>", pos);
+	if (pos2 == string::npos)
+		goto fail;
+	goto found;
+fail:
+	return "";
+found:
+	string title = page.substr(pos + 7, pos2 - 2 - (pos + 7));
+	printf("redirect title: %s\n", title.c_str());
+	return title;
+}
 
 class InvertedIndex {
 public:
@@ -302,16 +365,17 @@ public:
 		vector<IDTimesTF> vec;
 		for (size_t i = 0; i < words.size(); ++i) {
 			long df = df_[words[i]];
+			double weight = 1.0 / log(df);
 			printf("For words %s, df = %ld\n", words[i].c_str(), df);
 			for (long j = 0; j < df; j++) {
 				id = next_ll(fps[i]);
 				tf = next_ll(fps[i]);
 				if (id_times[id]++ == 0)
-					id_tfproduct[id] = 1.0;
+					id_tfproduct[id] = 1.0 / (strategy ? page_words_[id] : page_max_words_[id]);
 				if (strategy)
-					id_tfproduct[id] *= 1.0 * tf / page_words_[id];
+					id_tfproduct[id] *= 1.0 * tf * weight;
 				else
-					id_tfproduct[id] *= 1.0 * tf / page_max_words_[id];
+					id_tfproduct[id] *= 1.0 * tf * weight;
 			}
 		}
 		for_iter(it, id_times) {
@@ -320,11 +384,39 @@ public:
 		}
 		sort(vec.begin(), vec.end());
 		vector<ll> ids;
-		for (size_t i = 0; i < (size_t)K && i < vec.size(); i++) {
-			printf("id=%lld times=%d tfproduct=%f\n", vec[i].id, vec[i].times, vec[i].tfproduct);
-			if (page_words_[vec[i].id] < 100)
+		unordered_map<ll, bool> in_vec;
+		string page, redirect;
+		for (size_t i = 0; i < vec.size(); i++) {
+			if (page_words_[vec[i].id] < 100) {
+				/* 处理重定向文章 */
+				page = g_query_class->ID2Page(vec[i].id);
+				redirect = ReadRedirect(page);
+				if (redirect.length() < 1)
+					continue;
+
+				for (int i = 0; i < (int)redirect.length(); i++) {
+					redirect[i] = tolower(redirect[i]);
+					if (!isascii(redirect[i]))
+						redirect[i] = ' ';
+				}
+				printf("after tolower, the redirect title is: %s\n", redirect.c_str());
+
+				id = g_query_class->Title2ID(redirect);
+				printf("found id = %lld\n", id);
+				if (id < 0) continue;
+				if (!in_vec[id]) {
+					if (K-- == 0) break;
+					in_vec[id] = true;
+					ids.push_back(id);
+				}
 				continue;
-			ids.push_back(vec[i].id);
+			}
+			if (!in_vec[vec[i].id]) {
+				if (K-- == 0) break;
+				printf("id=%lld times=%d tfproduct=%f\n", vec[i].id, vec[i].times, vec[i].tfproduct);
+				in_vec[vec[i].id] = true;
+				ids.push_back(vec[i].id);
+			}
 		}
 		for_iter(fp, fps)
 			fclose(*fp);
@@ -394,6 +486,7 @@ string WaitInput(TCPServer &server)
 int main() {
 	IDOffsetTitle query_class = IDOffsetTitle(kIDOffsetTitleFile, kEnwikiFile);
 	InvertedIndex inverted_index_class = InvertedIndex(kInvertedIndexWordOffsetFile, kInvertedIndexFile);
+	g_query_class = &query_class;
 	TCPServer server("0.0.0.0", "23334");
 	while (1) {
 		string input = WaitInput(server);
