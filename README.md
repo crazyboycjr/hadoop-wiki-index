@@ -2,7 +2,8 @@
 A series of programs for generating inverted index of enwiki-multistream.xml and handling queries.
 
 这个仓库存放我分布式系统课程project的代码
-分布式系统课程pj主要完成以下工作：
+分布式系统课程pj主要完成以下工作:
+
 1. 根据[enwiki-latest-pages-articles-multistream.xml](https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles-multistream.xml.bz2)(我用的是20151102版本)构建Wikipedia索引，其中包含TF(Term Frequency)和DF(Document Frequency)信息
 2. 在单机处理索引，实现多关键词查询，并将结果按相关度排序
 3. 前端页面呈现，处理查询请求并返回结果列表和具体页面
