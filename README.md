@@ -1,4 +1,5 @@
 # hadoop-wiki-index
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 A series of programs for generating inverted index of enwiki-multistream.xml and handling queries.
 
 这个仓库存放我分布式系统课程project的代码
